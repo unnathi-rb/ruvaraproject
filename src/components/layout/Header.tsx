@@ -15,7 +15,7 @@ export default function Header({ currentPage, onPageChange, onAddImage }: Header
           {/* Logo */}
    <div className="flex items-center cursor-pointer" onClick={() => onPageChange('home')}>
     <img 
-    src="/logo.png"     
+    src="WhatsApp_Image_2025-08-22_at_9.09.15_PM-removebg-preview.png"     
     alt="Ruvara Logo" 
     className="w-10 h-10 mr-3" 
     />
