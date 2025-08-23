@@ -40,7 +40,7 @@ export default function CustomizeCanvas({
 
     switch (selectedProduct.category.toLowerCase()) {
       case 'tshirt':
-        return <img src="/assets/products/tshirt.png" alt="tshirt" className="w-64 h-64 object-contain mx-auto" />;
+        return <img src="/assets/products/tshirt.jpg" alt="tshirt" className="w-64 h-64 object-contain mx-auto" />;
       case 'mug':
         return <img src="/assets/products/mug.png" alt="mug" className="w-64 h-64 object-contain mx-auto" />;
       case 'totebag':
