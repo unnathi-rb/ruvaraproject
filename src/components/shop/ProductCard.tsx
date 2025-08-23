@@ -1,44 +1,40 @@
-import React from 'react';
-import { ShoppingCart } from 'lucide-react';
-import { Product } from '../../types';
+import React from "react";
+import { Product } from "../../types";
 
 interface ProductCardProps {
   product: Product;
-  onAddToCart: (id: string) => void;
 }
 
-export default function ProductCard({ product, onAddToCart }: ProductCardProps) {
+const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   return (
-    <div className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group">
-      <div className="relative">
-        <img
-          src={product.imageUrl}
-          alt={product.name}
-          className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300"
-        />
+    <div className="bg-white shadow-lg rounded-xl overflow-hidden hover:shadow-2xl transition duration-300">
+      {/* Product Image */}
+      <img
+        src={product.imageUrl || "https://via.placeholder.com/200"} // fallback
+        alt={product.name}
+        className="w-full h-48 object-cover"
+      />
+
+      {/* Product Info */}
+      <div className="p-4">
+        <h3 className="text-lg font-semibold text-gray-800">{product.name}</h3>
+        <p className="text-gray-600 text-sm">{product.description}</p>
+        <p className="text-red-700 font-bold mt-2">₹{product.price}</p>
+
+        {/* Category */}
+        <span className="inline-block mt-2 text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full">
+          {product.category}
+        </span>
       </div>
-      
-      <div className="p-6">
-        <div className="mb-2">
-          <span className="text-xs font-medium text-amber-700 bg-amber-100 px-2 py-1 rounded-full">
-            {product.category}
-          </span>
-        </div>
-        
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">{product.name}</h3>
-        <p className="text-gray-600 text-sm mb-4 line-clamp-2">{product.description}</p>
-        
-        <div className="flex justify-between items-center">
-          <span className="text-2xl font-bold text-red-800">₹{product.price}</span>
-          <button
-            onClick={() => onAddToCart(product.id)}
-            className="px-4 py-2 bg-red-800 text-white rounded-lg hover:bg-red-900 transition-colors flex items-center gap-2"
-          >
-            <ShoppingCart className="h-4 w-4" />
-            Add to Cart
-          </button>
-        </div>
+
+      {/* Buy Button */}
+      <div className="p-4">
+        <button className="w-full bg-red-700 text-white py-2 rounded-lg hover:bg-red-800 transition">
+          Buy Now
+        </button>
       </div>
     </div>
   );
-}
+};
+
+export default ProductCard;

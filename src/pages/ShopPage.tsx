@@ -1,117 +1,55 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
-
-interface Product {
-  _id: string;
-  title: string;
-  description: string;
-  price: number;
-  image: string;
-  category: string;
-}
+import ProductCard from "../components/shop/ProductCard";
+import { Product } from "../types";
 
 export default function ShopPage() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    price: "",
-    image: "",
-    category: "Art",
-  });
+  const [form, setForm] = useState({ name: "", price: "", imageUrl: "", category: "", description: "" });
 
+  // Fetch products from backend
   useEffect(() => {
-    fetchProducts();
+    axios.get("http://localhost:5000/api/products").then((res) => {
+      setProducts(res.data);
+    });
   }, []);
 
-  const fetchProducts = async () => {
+  // Handle upload
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await axios.post("http://localhost:5000/api/products", {
+      ...form,
+      price: Number(form.price),
+    });
+    setForm({ name: "", price: "", imageUrl: "", category: "", description: "" });
+
+    // Refresh list
     const res = await axios.get("http://localhost:5000/api/products");
     setProducts(res.data);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await axios.post("http://localhost:5000/api/products", {
-        ...formData,
-        price: parseFloat(formData.price),
-      });
-      setFormData({ name: "", description: "", price: "", image: "", category: "Art" });
-      fetchProducts();
-    } catch (err) {
-      console.error("Error adding product", err);
-    }
-  };
-
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Shop Page</h1>
+    <div className="max-w-7xl mx-auto p-6">
+      {/* Upload Form */}
+      <div className="bg-white p-6 rounded-xl shadow-md mb-8">
+        <h2 className="text-xl font-bold mb-4">Add Product</h2>
+        <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
+          <input type="text" placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="border p-2 rounded" />
+          <input type="number" placeholder="Price" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className="border p-2 rounded" />
+          <input type="text" placeholder="Image URL" value={form.imageUrl} onChange={(e) => setForm({ ...form, imageUrl: e.target.value })} className="border p-2 rounded col-span-2" />
+          <input type="text" placeholder="Category" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="border p-2 rounded col-span-2" />
+          <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="border p-2 rounded col-span-2" />
+          <button type="submit" className="bg-red-700 text-white py-2 rounded col-span-2 hover:bg-red-800">
+            Add Product
+          </button>
+        </form>
+      </div>
 
-      {/* Add Product Form */}
-      <form onSubmit={handleSubmit} className="mb-6 p-4 border rounded-lg space-y-3">
-        <input
-          type="text"
-          placeholder="Title"
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          className="w-full border p-2 rounded"
-          required
-        />
-        <textarea
-          placeholder="Description"
-          value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          className="w-full border p-2 rounded"
-        />
-        <input
-          type="number"
-          placeholder="Price"
-          value={formData.price}
-          onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-          className="w-full border p-2 rounded"
-          required
-        />
-        <input
-          type="text"
-          placeholder="Image URL"
-          value={formData.image}
-          onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-          className="w-full border p-2 rounded"
-        />
-
-        {/* Category Dropdown */}
-        <select
-          value={formData.category}
-          onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-          className="w-full border p-2 rounded"
-        >
-          <option value="Art">Art</option>
-          <option value="Print">Print</option>
-          <option value="Merchandise">Merchandise</option>
-          <option value="Other">Other</option>
-        </select>
-
-        <button type="submit" className="bg-red-800 text-white px-4 py-2 rounded">
-          Add Product
-        </button>
-      </form>
-
-      {/* Product List */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {/* Display Products */}
+      <h2 className="text-2xl font-bold mb-4">Available Products</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
         {products.map((product) => (
-          <div key={product._id} className="border rounded-lg p-4 shadow">
-            {product.image && (
-      <img
-        src={product.image}
-        alt={product.title}
-        className="w-full h-40 object-cover rounded mb-2"
-      />
-    )}
-            <h2 className="text-lg font-semibold">{product.title}</h2>
-            <p className="text-sm text-gray-600">{product.description}</p>
-            <p className="font-bold mt-2">₹{product.price}</p>
-            <span className="text-xs px-2 py-1 bg-gray-200 rounded">{product.category}</span>
-          </div>
+          <ProductCard key={product.id} product={product} />
         ))}
       </div>
     </div>
