@@ -1,43 +1,40 @@
 import React, { useState } from 'react';
-import { Save, Download, RotateCcw } from 'lucide-react';
+import { Save, RotateCcw } from 'lucide-react';
+import { ArtItem } from '../../types';
 
 interface CustomizeCanvasProps {
-  selectedArtStyles: ('Madhubani' | 'Warli' | 'Pithora')[];
+  selectedArtStyles: string[]; // <- dynamic art styles
   selectedProduct: string;
+  savedItems: ArtItem[];
   onSaveCustomization: (item: any) => void;
 }
 
-export default function CustomizeCanvas({ 
-  selectedArtStyles, 
-  selectedProduct, 
-  onSaveCustomization 
+export default function CustomizeCanvas({
+  selectedArtStyles,
+  selectedProduct,
+  savedItems,
+  onSaveCustomization,
 }: CustomizeCanvasProps) {
   const [customizationName, setCustomizationName] = useState('');
   const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [addedMotifs, setAddedMotifs] = useState<ArtItem[]>([]);
 
-  const getArtStylePattern = (style: string) => {
-    switch (style) {
-      case 'Madhubani':
-        return 'https://images.pexels.com/photos/1194420/pexels-photo-1194420.jpeg?auto=compress&cs=tinysrgb&w=400';
-      case 'Warli':
-        return 'https://images.pexels.com/photos/1143754/pexels-photo-1143754.jpeg?auto=compress&cs=tinysrgb&w=400';
-      case 'Pithora':
-        return 'https://images.pexels.com/photos/1194713/pexels-photo-1194713.jpeg?auto=compress&cs=tinysrgb&w=400';
-      default:
-        return 'https://images.pexels.com/photos/1194420/pexels-photo-1194420.jpeg?auto=compress&cs=tinysrgb&w=400';
+  const handleAddMotif = (img: ArtItem) => {
+    if (!addedMotifs.find(m => m.id === img.id)) {
+      setAddedMotifs([...addedMotifs, img]);
     }
   };
 
   const handleSave = () => {
     if (!customizationName.trim()) return;
-    
+
     const customizedItem = {
       id: Date.now().toString(),
       name: customizationName,
-      artStyle: selectedArtStyles[0] || 'Madhubani',
+      artStyles: selectedArtStyles,
       productType: selectedProduct,
-      imageUrl: getArtStylePattern(selectedArtStyles[0] || 'Madhubani'),
-      createdAt: new Date()
+      motifs: addedMotifs,
+      createdAt: new Date(),
     };
 
     onSaveCustomization(customizedItem);
@@ -45,15 +42,23 @@ export default function CustomizeCanvas({
     setShowSaveDialog(false);
   };
 
+  // Pick the first art style available from user saved images, if any
+  const artStyleImage = selectedArtStyles.length
+    ? savedItems.find(img =>
+        selectedArtStyles.some(style => img.title.includes(style))
+      )?.imageUrl
+    : '';
+
   return (
     <div className="bg-white rounded-2xl shadow-lg p-6">
+      {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold text-gray-900">Design Canvas</h2>
         <div className="flex gap-2">
           <button className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors">
             <RotateCcw className="h-5 w-5 text-gray-600" />
           </button>
-          <button 
+          <button
             onClick={() => setShowSaveDialog(true)}
             className="px-4 py-2 bg-red-800 text-white rounded-lg hover:bg-red-900 transition-colors flex items-center gap-2"
           >
@@ -63,25 +68,44 @@ export default function CustomizeCanvas({
         </div>
       </div>
 
-      {/* Canvas Area */}
+      {/* Canvas */}
       <div className="relative bg-amber-50 rounded-xl min-h-96 flex items-center justify-center border-2 border-dashed border-amber-200">
-        {selectedProduct && selectedArtStyles.length > 0 ? (
+        {selectedProduct ? (
           <div className="relative">
             {/* Product Template */}
-            <div className={`w-64 h-80 bg-white rounded-lg shadow-lg flex items-center justify-center ${
-              selectedProduct === 'T-Shirt' ? 'bg-gray-100' :
-              selectedProduct === 'Mug' ? 'bg-white border-4 border-gray-200 rounded-full w-48 h-48' :
-              selectedProduct === 'Tote Bag' ? 'bg-amber-100' : 'bg-white'
-            }`}>
+            <div
+              className={`w-64 h-80 flex items-center justify-center rounded-lg shadow-lg ${
+                selectedProduct === 'T-Shirt'
+                  ? 'bg-gray-100'
+                  : selectedProduct === 'Mug'
+                  ? 'bg-white border-4 border-gray-200 rounded-full w-48 h-48'
+                  : selectedProduct === 'Tote Bag'
+                  ? 'bg-amber-100'
+                  : 'bg-white'
+              }`}
+            >
               {/* Art Style Overlay */}
-              <div className="w-40 h-40 bg-cover bg-center rounded-lg opacity-80"
-                   style={{ backgroundImage: `url(${getArtStylePattern(selectedArtStyles[0])})` }}>
-              </div>
+              {artStyleImage && (
+                <div
+                  className="w-40 h-40 bg-cover bg-center rounded-lg opacity-80"
+                  style={{ backgroundImage: `url(${artStyleImage})` }}
+                ></div>
+              )}
+
+              {/* Added Motifs */}
+              {addedMotifs.map(m => (
+                <img
+                  key={m.id}
+                  src={m.imageUrl}
+                  alt={m.title}
+                  className="absolute w-16 h-16 rounded-lg opacity-90"
+                />
+              ))}
             </div>
-            
+
             <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2">
               <span className="bg-white px-3 py-1 rounded-full text-sm font-medium text-gray-700 shadow-md">
-                {selectedArtStyles[0]} on {selectedProduct}
+                {selectedArtStyles.join(', ')} on {selectedProduct}
               </span>
             </div>
           </div>
@@ -93,20 +117,20 @@ export default function CustomizeCanvas({
         )}
       </div>
 
-      {/* Tools */}
-      <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3">
-        <button className="p-3 border border-amber-200 rounded-lg hover:bg-amber-50 transition-colors text-center">
-          <div className="text-sm font-medium text-gray-700">Add Text</div>
-        </button>
-        <button className="p-3 border border-amber-200 rounded-lg hover:bg-amber-50 transition-colors text-center">
-          <div className="text-sm font-medium text-gray-700">Add Motif</div>
-        </button>
-        <button className="p-3 border border-amber-200 rounded-lg hover:bg-amber-50 transition-colors text-center">
-          <div className="text-sm font-medium text-gray-700">Change Colors</div>
-        </button>
-        <button className="p-3 border border-amber-200 rounded-lg hover:bg-amber-50 transition-colors text-center">
-          <div className="text-sm font-medium text-gray-700">Resize</div>
-        </button>
+      {/* Tools / Motifs */}
+      <div className="mt-6">
+        <h4 className="font-medium text-gray-700 mb-2">Your Saved Art</h4>
+        <div className="flex gap-2 overflow-x-auto py-2">
+          {savedItems.map(img => (
+            <img
+              key={img.id}
+              src={img.imageUrl}
+              alt={img.title}
+              className="w-20 h-20 object-cover rounded-lg cursor-pointer border-2 hover:border-red-500"
+              onClick={() => handleAddMotif(img)}
+            />
+          ))}
+        </div>
       </div>
 
       {/* Save Dialog */}
@@ -117,7 +141,7 @@ export default function CustomizeCanvas({
             <input
               type="text"
               value={customizationName}
-              onChange={(e) => setCustomizationName(e.target.value)}
+              onChange={e => setCustomizationName(e.target.value)}
               placeholder="Enter design name"
               className="w-full px-3 py-2 border border-amber-200 rounded-lg focus:ring-2 focus:ring-red-300 focus:border-transparent mb-4"
             />
