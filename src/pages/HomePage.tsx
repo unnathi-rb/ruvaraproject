@@ -68,15 +68,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 to-red-50">
-      <div className="flex justify-between items-center pt-8 pb-6 px-6">
-        <h1 className="text-2xl font-semibold text-gray-900">Art Gallery</h1>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="px-4 py-2 bg-red-800 text-white rounded-lg hover:bg-red-900 transition-colors"
-        >
-          Add Artwork
-        </button>
-      </div>
+      
 
       <div className="pt-2 pb-16 px-6">
         <MasonryGrid items={artItems} onSave={handleSave} />
