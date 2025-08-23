@@ -1,12 +1,20 @@
 import React, { useState } from 'react';
 import { Save, RotateCcw } from 'lucide-react';
 import { ArtItem } from '../../types';
+import Draggable from 'react-draggable';
 
 interface CustomizeCanvasProps {
-  selectedArtStyles: string[]; // <- dynamic art styles
+  selectedArtStyles: string[];
   selectedProduct: string;
   savedItems: ArtItem[];
   onSaveCustomization: (item: any) => void;
+}
+
+interface CanvasText {
+  id: string;
+  text: string;
+  x: number;
+  y: number;
 }
 
 export default function CustomizeCanvas({
@@ -18,11 +26,22 @@ export default function CustomizeCanvas({
   const [customizationName, setCustomizationName] = useState('');
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [addedMotifs, setAddedMotifs] = useState<ArtItem[]>([]);
+  const [canvasTexts, setCanvasTexts] = useState<CanvasText[]>([]);
+  const [newText, setNewText] = useState('');
 
   const handleAddMotif = (img: ArtItem) => {
     if (!addedMotifs.find(m => m.id === img.id)) {
       setAddedMotifs([...addedMotifs, img]);
     }
+  };
+
+  const handleAddText = () => {
+    if (!newText.trim()) return;
+    setCanvasTexts([
+      ...canvasTexts,
+      { id: Date.now().toString(), text: newText, x: 0, y: 0 },
+    ]);
+    setNewText('');
   };
 
   const handleSave = () => {
@@ -34,6 +53,7 @@ export default function CustomizeCanvas({
       artStyles: selectedArtStyles,
       productType: selectedProduct,
       motifs: addedMotifs,
+      texts: canvasTexts,
       createdAt: new Date(),
     };
 
@@ -42,12 +62,21 @@ export default function CustomizeCanvas({
     setShowSaveDialog(false);
   };
 
-  // Pick the first art style available from user saved images, if any
-  const artStyleImage = selectedArtStyles.length
-    ? savedItems.find(img =>
-        selectedArtStyles.some(style => img.title.includes(style))
-      )?.imageUrl
-    : '';
+  // Product canvas style
+  const productStyle = {
+    width: selectedProduct === 'Mug' ? 192 : 256, // 48px vs 64px in Tailwind, adjust as needed
+    height: selectedProduct === 'Mug' ? 192 : 320,
+    backgroundColor: 'white',
+    border:
+      selectedProduct === 'Mug'
+        ? '4px solid #ccc'
+        : '2px solid #ccc',
+    borderRadius: selectedProduct === 'Mug' ? '50%' : '12px',
+    position: 'relative' as 'relative',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+  };
 
   return (
     <div className="bg-white rounded-2xl shadow-lg p-6">
@@ -71,55 +100,54 @@ export default function CustomizeCanvas({
       {/* Canvas */}
       <div className="relative bg-amber-50 rounded-xl min-h-96 flex items-center justify-center border-2 border-dashed border-amber-200">
         {selectedProduct ? (
-          <div className="relative">
-            {/* Product Template */}
-            <div
-              className={`w-64 h-80 flex items-center justify-center rounded-lg shadow-lg ${
-                selectedProduct === 'T-Shirt'
-                  ? 'bg-gray-100'
-                  : selectedProduct === 'Mug'
-                  ? 'bg-white border-4 border-gray-200 rounded-full w-48 h-48'
-                  : selectedProduct === 'Tote Bag'
-                  ? 'bg-amber-100'
-                  : 'bg-white'
-              }`}
-            >
-              {/* Art Style Overlay */}
-              {artStyleImage && (
-                <div
-                  className="w-40 h-40 bg-cover bg-center rounded-lg opacity-80"
-                  style={{ backgroundImage: `url(${artStyleImage})` }}
-                ></div>
-              )}
-
-              {/* Added Motifs */}
-              {addedMotifs.map(m => (
+          <div style={productStyle}>
+            {/* Draggable motifs */}
+            {addedMotifs.map(m => (
+              <Draggable key={m.id}>
                 <img
-                  key={m.id}
                   src={m.imageUrl}
                   alt={m.title}
-                  className="absolute w-16 h-16 rounded-lg opacity-90"
+                  className="w-16 h-16 rounded-lg cursor-move"
                 />
-              ))}
-            </div>
+              </Draggable>
+            ))}
 
-            <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2">
-              <span className="bg-white px-3 py-1 rounded-full text-sm font-medium text-gray-700 shadow-md">
-                {selectedArtStyles.join(', ')} on {selectedProduct}
-              </span>
-            </div>
+            {/* Draggable texts */}
+            {canvasTexts.map(t => (
+              <Draggable key={t.id}>
+                <span className="absolute text-gray-800 font-medium cursor-move">
+                  {t.text}
+                </span>
+              </Draggable>
+            ))}
           </div>
         ) : (
           <div className="text-center text-gray-500">
-            <p className="text-lg font-medium mb-2">Select an art style and product to start</p>
-            <p className="text-sm">Your customization will appear here</p>
+            <p className="text-lg font-medium mb-2">Select a product to start</p>
           </div>
         )}
       </div>
 
-      {/* Tools / Motifs */}
-      <div className="mt-6">
-        <h4 className="font-medium text-gray-700 mb-2">Your Saved Art</h4>
+      {/* Tools */}
+      <div className="mt-6 flex flex-col md:flex-row gap-4">
+        {/* Add Text */}
+        <div className="flex gap-2">
+          <input
+            type="text"
+            placeholder="Add text"
+            value={newText}
+            onChange={e => setNewText(e.target.value)}
+            className="px-3 py-2 border rounded-lg w-full"
+          />
+          <button
+            onClick={handleAddText}
+            className="px-3 py-2 bg-red-800 text-white rounded-lg hover:bg-red-900"
+          >
+            Add
+          </button>
+        </div>
+
+        {/* Motifs selector */}
         <div className="flex gap-2 overflow-x-auto py-2">
           {savedItems.map(img => (
             <img
