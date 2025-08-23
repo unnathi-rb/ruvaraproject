@@ -1,3 +1,15 @@
+
+// src/types/index.ts
+export interface Product {
+  _id?: string;
+  name: string;
+  description: string;
+  price: number;
+  category: string;
+  image: string;
+  exportReady: boolean;
+}
+
 export interface ArtItem {
   id: string;
   title: string;
@@ -7,17 +19,7 @@ export interface ArtItem {
   artist?: string;
   tags: string[];
   isSaved?: boolean;
-  userId: string; 
-}
-
-export interface Product {
-  id: string;
-  name: string;
-  price: number;
-  imageUrl: string;
-  category: string;
-  description: string;
-  inWishlist?: boolean;
+  userId: string;
 }
 
 export interface CustomizedItem {
