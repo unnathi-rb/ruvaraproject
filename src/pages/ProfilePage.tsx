@@ -24,8 +24,7 @@ export default function ProfilePage({
         customizedItems={customizedItems}
         orders={orders}
         activeTab={activeTab}
-        onTabChange={onTabChange}
-      />
+        onTabChange={onTabChange} userId={''}      />
     </div>
   );
 }

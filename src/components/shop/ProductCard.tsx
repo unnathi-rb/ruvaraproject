@@ -10,7 +10,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     <div className="bg-white shadow-lg rounded-xl overflow-hidden hover:shadow-2xl transition duration-300">
       {/* Product Image */}
       <img
-        src={product.imageUrl || "https://via.placeholder.com/200"} // fallback
+        src={product.image || "https://via.placeholder.com/200"} // fallback
         alt={product.name}
         className="w-full h-48 object-cover"
       />
