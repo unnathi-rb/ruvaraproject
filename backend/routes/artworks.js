@@ -1,52 +1,55 @@
 const express = require('express');
+const router = express.Router();
 const Art = require('../models/Art');
 
-module.exports = (io) => {
-  const router = express.Router();
+// Get all artworks, optionally filter by userId
+router.get('/', async (req, res) => {
+  try {
+    const { userId } = req.query;
+    let query = {};
+    if (userId) query.userId = userId;
 
-  // GET all artworks
-  router.get('/', async (req, res) => {
-    try {
-      const artworks = await Art.find().sort({ _id: -1 });
-      res.json(artworks);
-    } catch (err) {
-      res.status(500).json({ error: err.message });
+    const artworks = await Art.find(query).sort({ _id: -1 });
+    res.json(artworks);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Add new artwork
+router.post('/', async (req, res) => {
+  try {
+    const newArt = new Art(req.body); // req.body must contain userId
+    await newArt.save();
+
+    // Emit via Socket.IO if using real-time updates
+    if (req.app.get('io')) {
+      req.app.get('io').emit('new-artwork', newArt);
     }
-  });
 
-  // POST new artwork
-  router.post('/', async (req, res) => {
-    try {
-      const newArt = new Art(req.body);
-      await newArt.save();
+    res.status(201).json(newArt);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
-      // Broadcast new artwork to all connected clients
-      io.emit('new-artwork', newArt);
+// Toggle save/bookmark
+router.patch('/:id/save', async (req, res) => {
+  try {
+    const art = await Art.findById(req.params.id);
+    if (!art) return res.status(404).json({ message: 'Not found' });
 
-      res.status(201).json(newArt);
-    } catch (err) {
-      console.error('Error in POST /api/artworks:', err);
-      res.status(500).json({ error: err.message });
+    art.isSaved = !art.isSaved;
+    await art.save();
+
+    if (req.app.get('io')) {
+      req.app.get('io').emit('update-artwork', art);
     }
-  });
 
-  // PATCH save/bookmark toggle
-  router.patch('/:id/save', async (req, res) => {
-    try {
-      const art = await Art.findById(req.params.id);
-      if (!art) return res.status(404).json({ message: 'Not found' });
+    res.json(art);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
-      art.isSaved = !art.isSaved;
-      await art.save();
-
-      // Broadcast update
-      io.emit('update-artwork', art);
-
-      res.json(art);
-    } catch (err) {
-      res.status(500).json({ error: err.message });
-    }
-  });
-
-  return router;
-};
+module.exports = router;

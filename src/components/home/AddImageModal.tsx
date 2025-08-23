@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { X } from 'lucide-react';
 import axios from 'axios';
-
+import { Socket } from 'socket.io-client';
 interface AddImageModalProps {
   isOpen: boolean;
   onClose: () => void;
+  socket: Socket | null; // pass socket from HomePage
+  userId: string;
 }
 
-export default function AddImageModal({ isOpen, onClose }: AddImageModalProps) {
+export default function AddImageModal({ isOpen, onClose, socket, userId }: AddImageModalProps) {
   const [formData, setFormData] = useState({
     title: '',
     artForm: 'Madhubani',
@@ -16,9 +18,7 @@ export default function AddImageModal({ isOpen, onClose }: AddImageModalProps) {
     tags: '',
     imageUrl: '',
   });
-
   const [otherArtForm, setOtherArtForm] = useState('');
-  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,21 +28,22 @@ export default function AddImageModal({ isOpen, onClose }: AddImageModalProps) {
         ? otherArtForm.trim()
         : formData.artForm;
 
-    const newArtwork = {
+    const payload = {
       ...formData,
       artForm: finalArtForm,
       tags: formData.tags
         .split(',')
         .map((tag) => tag.trim())
         .filter((tag) => tag),
+      userId,
     };
 
     try {
-      setLoading(true);
-      await axios.post('http://localhost:5000/api/artworks', newArtwork);
-      setLoading(false);
+      const res = await axios.post('http://localhost:5000/api/artworks', payload);
+      
+      // emit via socket
+      socket?.emit('new-artwork', res.data);
 
-      // Reset form
       setFormData({
         title: '',
         artForm: 'Madhubani',
@@ -54,13 +55,12 @@ export default function AddImageModal({ isOpen, onClose }: AddImageModalProps) {
       setOtherArtForm('');
       onClose();
     } catch (err) {
-      console.error('Error adding artwork:', err);
-      setLoading(false);
+      console.error(err);
     }
   };
 
   if (!isOpen) return null;
-
+  
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
@@ -180,10 +180,9 @@ export default function AddImageModal({ isOpen, onClose }: AddImageModalProps) {
             </button>
             <button
               type="submit"
-              disabled={loading}
               className="flex-1 px-4 py-2 bg-red-800 text-white rounded-lg hover:bg-red-900 transition-colors"
             >
-              {loading ? 'Adding...' : 'Add Artwork'}
+              Add Artwork
             </button>
           </div>
         </form>

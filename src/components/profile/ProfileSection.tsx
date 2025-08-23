@@ -1,8 +1,10 @@
-import React from 'react';
-import { BookmarkPlus, Palette, Package, User } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { BookmarkPlus, Palette, Package, User, CheckCircle } from 'lucide-react';
 import { ArtItem, CustomizedItem, Order } from '../../types';
+import axios from 'axios';
 
 interface ProfileSectionProps {
+  userId: string;
   savedItems: ArtItem[];
   customizedItems: CustomizedItem[];
   orders: Order[];
@@ -11,30 +13,73 @@ interface ProfileSectionProps {
 }
 
 export default function ProfileSection({ 
+  userId, 
   savedItems, 
   customizedItems, 
   orders, 
   activeTab, 
   onTabChange 
 }: ProfileSectionProps) {
+  const [userArtCount, setUserArtCount] = useState(0);
+  const [currentUser, setCurrentUser] = useState<{ name?: string; bio?: string } | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch user info
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      try {
+        setLoading(true);
+        const resUser = await axios.get(`http://localhost:5000/api/users/${userId}`);
+        const resArt = await axios.get(`http://localhost:5000/api/artworks?userId=${userId}`);
+        setCurrentUser(resUser.data);
+        setUserArtCount(resArt.data.length);
+      } catch (err) {
+        console.error('Error fetching user data:', err);
+        setCurrentUser(null);
+        setUserArtCount(0);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchUserInfo();
+  }, [userId]);
+
   const tabs = [
     { id: 'saved', name: 'Saved Photos', icon: BookmarkPlus, count: savedItems.length },
     { id: 'customized', name: 'My Designs', icon: Palette, count: customizedItems.length },
     { id: 'orders', name: 'Order History', icon: Package, count: orders.length }
   ];
 
+  if (loading) {
+    return <div className="p-8 text-center text-gray-500">Loading profile...</div>;
+  }
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
       {/* Profile Header */}
-      <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
-        <div className="flex items-center gap-6">
-          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center">
-            <User className="h-10 w-10 text-red-800" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Your Profile</h1>
-            <p className="text-gray-600">Discover and customize beautiful Indian folk art</p>
-          </div>
+      <div className="bg-white rounded-2xl shadow-lg p-8 mb-8 flex items-center gap-6">
+        <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center relative text-xl font-bold text-red-800">
+          {currentUser?.name ? currentUser.name[0] : 'U'}
+          {userArtCount >= 3 && (
+            <CheckCircle className="absolute -bottom-1 -right-1 h-6 w-6 text-green-500" />
+          )}
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">
+            {currentUser?.name || 'Your Profile'}
+          </h1>
+          {currentUser?.bio && (
+            <p className="text-gray-600 mb-1">{currentUser.bio}</p>
+          )}
+          <p className="text-gray-600 mb-1">
+            You have posted <span className="font-semibold">{userArtCount}</span> artworks
+          </p>
+          {userArtCount >= 3 && (
+            <span className="inline-flex items-center gap-1 text-green-600 text-sm font-medium">
+              Verified Artist
+              <CheckCircle className="h-4 w-4" />
+            </span>
+          )}
         </div>
       </div>
 
@@ -70,100 +115,46 @@ export default function ProfileSection({
         {/* Tab Content */}
         <div className="p-8">
           {activeTab === 'saved' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {savedItems.map((item) => (
-                <div key={item.id} className="bg-gray-50 rounded-xl overflow-hidden">
-                  <img 
-                    src={item.imageUrl} 
-                    alt={item.title}
-                    className="w-full h-48 object-cover"
-                  />
-                  <div className="p-4">
-                    <h3 className="font-semibold text-gray-900 mb-1">{item.title}</h3>
-                    <p className="text-sm text-gray-600">{item.artForm}</p>
-                  </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {savedItems.length > 0 ? savedItems.map((item) => (
+                <div key={item.id} className="rounded-lg overflow-hidden shadow-sm bg-gray-50">
+                  <img src={item.imageUrl} alt={item.title} className="w-full h-40 object-cover" />
+                  <div className="p-2 text-sm font-medium">{item.title}</div>
                 </div>
-              ))}
-              {savedItems.length === 0 && (
-                <div className="col-span-full text-center py-12">
-                  <BookmarkPlus className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">No saved photos yet</p>
-                </div>
+              )) : (
+                <p className="text-gray-500">No saved images yet.</p>
               )}
             </div>
           )}
 
           {activeTab === 'customized' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {customizedItems.map((item) => (
-                <div key={item.id} className="bg-gray-50 rounded-xl overflow-hidden">
-                  <img 
-                    src={item.imageUrl} 
-                    alt={item.name}
-                    className="w-full h-48 object-cover"
-                  />
-                  <div className="p-4">
-                    <h3 className="font-semibold text-gray-900 mb-1">{item.name}</h3>
-                    <p className="text-sm text-gray-600">
-                      {item.artStyle} on {item.productType}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-2">
-                      Created {item.createdAt.toLocaleDateString()}
-                    </p>
-                  </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {customizedItems.length > 0 ? customizedItems.map((item) => (
+                <div key={item.id} className="rounded-lg overflow-hidden shadow-sm bg-gray-50">
+                 {/* <img src={item.previewImage} alt={item.name} className="w-full h-40 object-cover" />*/}
+                  <div className="p-2 text-sm font-medium">{item.name}</div>
                 </div>
-              ))}
-              {customizedItems.length === 0 && (
-                <div className="col-span-full text-center py-12">
-                  <Palette className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">No custom designs yet</p>
-                </div>
+              )) : (
+                <p className="text-gray-500">No designs yet.</p>
               )}
             </div>
           )}
 
           {activeTab === 'orders' && (
-            <div className="space-y-6">
-              {orders.map((order) => (
-                <div key={order.id} className="border border-gray-200 rounded-xl p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="font-semibold text-gray-900">Order #{order.id}</h3>
-                      <p className="text-sm text-gray-600">
-                        {order.date.toLocaleDateString()}
-                      </p>
-                    </div>
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      order.status === 'delivered'
-                        ? 'bg-green-100 text-green-800'
-                        : order.status === 'shipped'
-                        ? 'bg-blue-100 text-blue-800'
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                    </span>
+            <div className="space-y-4">
+              {orders.length > 0 ? orders.map((order) => (
+                <div key={order.id} className="p-4 border rounded-lg flex justify-between items-center">
+                  <div>
+                    <p className="font-medium">Order #{order.id}</p>
+                    <p className="text-sm text-gray-500">Status: {order.status}</p>
                   </div>
-                  <div className="space-y-2">
-                    {order.items.map((item) => (
-                      <div key={item.id} className="flex justify-between">
-                        <span className="text-gray-700">{item.name}</span>
-                        <span className="font-medium">₹{item.price}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="border-t border-gray-200 pt-2 mt-2">
-                    <div className="flex justify-between font-semibold">
-                      <span>Total</span>
-                      <span>₹{order.total}</span>
-                    </div>
+                  <div className="text-right">
+                    <p className="font-semibold">₹{order.total}</p>
+                    <p className="text-sm text-gray-500">{order.items.length} items</p>
                   </div>
                 </div>
-              ))}
-              {orders.length === 0 && (
-                <div className="text-center py-12">
-                  <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">No orders yet</p>
-                </div>
+              )) : (
+                <p className="text-gray-500">No orders yet.</p>
               )}
             </div>
           )}

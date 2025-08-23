@@ -7,6 +7,7 @@ export interface ArtItem {
   artist?: string;
   tags: string[];
   isSaved?: boolean;
+  userId: string; 
 }
 
 export interface Product {
