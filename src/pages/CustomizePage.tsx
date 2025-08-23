@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import StyleSelector from '../components/customize/StyleSelector';
 import ProductSelector from '../components/customize/ProductSelector';
 import CustomizeCanvas from '../components/customize/CustomizeCanvas';
 import { CustomizedItem } from '../types';
@@ -12,12 +11,6 @@ export default function CustomizePage({ onSaveCustomization }: CustomizePageProp
   const [selectedStyles, setSelectedStyles] = useState<('Madhubani' | 'Warli' | 'Pithora')[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
   const [customizationName, setCustomizationName] = useState('');
-
-  const handleStyleToggle = (style: 'Madhubani' | 'Warli' | 'Pithora') => {
-    setSelectedStyles(prev =>
-      prev.includes(style) ? prev.filter(s => s !== style) : [...prev, style]
-    );
-  };
 
   const handleSave = () => {
     if (!customizationName.trim() || !selectedProduct || selectedStyles.length === 0) return;
@@ -44,7 +37,6 @@ export default function CustomizePage({ onSaveCustomization }: CustomizePageProp
 
           {/* Left Panel: Style & Product Selection */}
           <div className="space-y-6">
-            <StyleSelector selectedStyles={selectedStyles} onStyleToggle={handleStyleToggle} />
             <ProductSelector selectedProduct={selectedProduct} onProductSelect={setSelectedProduct} />
 
             {/* Name & Save */}
@@ -72,7 +64,7 @@ export default function CustomizePage({ onSaveCustomization }: CustomizePageProp
               selectedArtStyles={selectedStyles}
               selectedProduct={selectedProduct || ''}
               onSaveCustomization={onSaveCustomization} // optional, already saving from left
-            />
+              savedItems={[]}            />
           </div>
         </div>
       </div>

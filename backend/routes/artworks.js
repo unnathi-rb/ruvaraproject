@@ -2,53 +2,70 @@ const express = require('express');
 const router = express.Router();
 const Art = require('../models/Art');
 
-// Get all artworks, optionally filter by userId
-router.get('/', async (req, res) => {
-  try {
-    const { userId } = req.query;
-    let query = {};
-    if (userId) query.userId = userId;
-
-    const artworks = await Art.find(query).sort({ _id: -1 });
-    res.json(artworks);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Add new artwork
+// --- Create new artwork ---
 router.post('/', async (req, res) => {
   try {
-    const newArt = new Art(req.body); // req.body must contain userId
-    await newArt.save();
+    const { title, artForm, imageUrl, description, artist, tags, userId } = req.body;
 
-    // Emit via Socket.IO if using real-time updates
-    if (req.app.get('io')) {
-      req.app.get('io').emit('new-artwork', newArt);
+    if (!userId) {
+      return res.status(400).json({ message: 'userId is required' });
     }
 
+    const newArt = new Art({
+      title,
+      artForm,
+      imageUrl,
+      description,
+      artist,
+      tags,
+      userId,
+    });
+
+    await newArt.save();
     res.status(201).json(newArt);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Error creating artwork' });
   }
 });
 
-// Toggle save/bookmark
-router.patch('/:id/save', async (req, res) => {
+// --- Get all artworks ---
+router.get('/', async (req, res) => {
+  try {
+    const artworks = await Art.find();
+    res.json(artworks);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Error fetching artworks' });
+  }
+});
+
+// --- Get artworks by user ---
+router.get('/user/:userId', async (req, res) => {
+  try {
+    const artworks = await Art.find({ userId: req.params.userId });
+    res.json(artworks);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Error fetching user artworks' });
+  }
+});
+
+// --- Save/Unsave artwork ---
+router.put('/:id/save', async (req, res) => {
   try {
     const art = await Art.findById(req.params.id);
-    if (!art) return res.status(404).json({ message: 'Not found' });
-
-    art.isSaved = !art.isSaved;
-    await art.save();
-
-    if (req.app.get('io')) {
-      req.app.get('io').emit('update-artwork', art);
+    if (!art) {
+      return res.status(404).json({ message: 'Artwork not found' });
     }
+
+    art.isSaved = !art.isSaved; // toggle saved status
+    await art.save();
 
     res.json(art);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Error saving artwork' });
   }
 });
 

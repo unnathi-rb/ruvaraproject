@@ -1,115 +1,82 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 
 interface ProductUploadProps {
-  onProductAdded: () => void;
+  onProductAdded?: () => void; // 👈 optional callback
 }
 
 export default function ProductUpload({ onProductAdded }: ProductUploadProps) {
   const [form, setForm] = useState({
-    name: '',
-    description: '',
-    price: '',
-    category: '',
-    imageUrl: '',
+    name: "",
+    description: "",
+    price: "",
+    category: "",
+    imageUrl: "",
     exportReady: false,
   });
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    const { name, value, type } = e.target;
+    setForm({
+      ...form,
+      [name]:
+        type === "checkbox"
+          ? (e.target as HTMLInputElement).checked
+          : value,
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
-      const res = await fetch('http://localhost:5000/api/products', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("http://localhost:5000/api/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
           price: parseFloat(form.price),
         }),
       });
 
-      if (res.ok) {
-        setForm({
-          name: '',
-          description: '',
-          price: '',
-          category: '',
-          imageUrl: '',
-          exportReady: false,
-        });
+      if (!res.ok) throw new Error("Failed to upload product");
+      const data = await res.json();
+      alert("✅ Product uploaded successfully!");
+      console.log("Saved:", data);
+
+      // reset form
+      setForm({
+        name: "",
+        description: "",
+        price: "",
+        category: "",
+        imageUrl: "",
+        exportReady: false,
+      });
+
+      // ✅ trigger callback so parent can refresh product list
+      if (onProductAdded) {
         onProductAdded();
       }
-    } catch (error) {
-      console.error('Error uploading product:', error);
+    } catch (err) {
+      console.error("Error uploading product:", err);
+      alert("❌ Error uploading product");
     }
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="bg-white shadow-lg rounded-2xl p-6"
-    >
-      <h2 className="text-lg font-semibold mb-4">Upload New Product</h2>
-
-      <input
-        type="text"
-        placeholder="Product Name"
-        value={form.name}
-        onChange={(e) => setForm({ ...form, name: e.target.value })}
-        className="border rounded p-2 mb-2 w-full"
-        required
-      />
-
-      <textarea
-        placeholder="Description"
-        value={form.description}
-        onChange={(e) => setForm({ ...form, description: e.target.value })}
-        className="border rounded p-2 mb-2 w-full"
-      />
-
-      <input
-        type="number"
-        placeholder="Price"
-        value={form.price}
-        onChange={(e) => setForm({ ...form, price: e.target.value })}
-        className="border rounded p-2 mb-2 w-full"
-        required
-      />
-
-      <input
-        type="text"
-        placeholder="Category"
-        value={form.category}
-        onChange={(e) => setForm({ ...form, category: e.target.value })}
-        className="border rounded p-2 mb-2 w-full"
-        required
-      />
-
-      <input
-        type="text"
-        placeholder="Image URL"
-        value={form.imageUrl}
-        onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
-        className="border rounded p-2 mb-2 w-full"
-      />
-
-      {/* ✅ Export Ready Checkbox */}
-      <label className="flex items-center gap-2 mb-4">
-        <input
-          type="checkbox"
-          checked={form.exportReady}
-          onChange={(e) =>
-            setForm({ ...form, exportReady: e.target.checked })
-          }
-        />
-        <span>Export Ready</span>
+    <form onSubmit={handleSubmit}>
+      <input name="name" value={form.name} onChange={handleChange} placeholder="Name" required />
+      <textarea name="description" value={form.description} onChange={handleChange} placeholder="Description" />
+      <input name="price" value={form.price} onChange={handleChange} placeholder="Price" type="number" required />
+      <input name="category" value={form.category} onChange={handleChange} placeholder="Category" required />
+      <input name="imageUrl" value={form.imageUrl} onChange={handleChange} placeholder="Image URL" />
+      <label>
+        <input type="checkbox" name="exportReady" checked={form.exportReady} onChange={handleChange} />
+        Export Ready
       </label>
-
-      <button
-        type="submit"
-        className="bg-red-800 text-white px-4 py-2 rounded-lg hover:bg-red-700"
-      >
-        Upload
-      </button>
+      <button type="submit">Upload Product</button>
     </form>
   );
 }

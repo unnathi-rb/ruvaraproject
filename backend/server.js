@@ -1,37 +1,49 @@
 const express = require('express');
 const connectDB = require('./db');
 const cors = require('cors');
-const http = require('http'); // for Socket.IO
+const http = require('http'); // Needed for Socket.IO
 const { Server } = require('socket.io');
 
 const app = express();
+
+// --- Connect to MongoDB ---
 connectDB();
 
+// --- Middleware ---
 app.use(cors());
 app.use(express.json());
 
-// --- Socket.IO setup ---
+// --- Create HTTP server for Socket.IO ---
 const server = http.createServer(app);
+
+// --- Socket.IO setup ---
 const io = new Server(server, {
-  cors: { origin: '*' },
+  cors: { origin: '*' }, // allow all origins for now
 });
 
 io.on('connection', (socket) => {
-  console.log('New client connected:', socket.id);
-  socket.on('disconnect', () => console.log('Client disconnected:', socket.id));
+  console.log('✅ New client connected:', socket.id);
+
+  socket.on('disconnect', () => {
+    console.log('❌ Client disconnected:', socket.id);
+  });
 });
 
-// --- User routes ---
+// --- Routes ---
+// Users
 const userRoutes = require('./routes/user');
 app.use('/api/users', userRoutes);
 
-// --- Art routes ---
-const artworkRoutes = require('./routes/artworks')(io); // pass io to routes
+// Artworks (pass io)
+const artworkRoutes = require('./routes/artworks'); 
 app.use('/api/artworks', artworkRoutes);
 
-// --- Product routes (NEW) ---
+// Products
 const productRoutes = require('./routes/productRoutes');
 app.use('/api/products', productRoutes);
 
-const PORT = 5000;
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// --- Start server ---
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => {
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
+});

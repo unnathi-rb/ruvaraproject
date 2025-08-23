@@ -1,14 +1,16 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const productSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  description: { type: String },
+  name: { type: String, required: true }, // changed title → name
+  description: String,
   price: { type: Number, required: true },
-  category: { type: String, required: true },
-  imageUrl: { type: String },
-  exportReady: { type: Boolean, default: false }  // ✅ NEW FIELD
+  image: String,
+  category: { 
+    type: String, 
+    required: true, 
+    enum: ["Art", "Print", "Merchandise", "Other"] 
+  },
+  createdAt: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model('Product', productSchema);
-
-
+module.exports = mongoose.model("Product", productSchema);

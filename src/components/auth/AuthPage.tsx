@@ -63,8 +63,12 @@ export default function AuthPage({ onLogin }: AuthPageProps) {
       <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
         {/* Logo and Header */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-red-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Palette className="h-8 w-8 text-white" />
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5">
+            <img 
+    src="WhatsApp_Image_2025-08-22_at_9.09.15_PM-removebg-preview.png"     
+    alt="Ruvara Logo" 
+    className="w-50 h-70 mr-4" 
+    />
           </div>
           <h1 className="text-3xl font-bold text-red-800 mb-2">Ruvara</h1>
           <p className="text-gray-600">

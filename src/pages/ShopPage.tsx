@@ -1,91 +1,118 @@
-// src/pages/ShopPage.tsx
-import React, { useEffect, useState } from 'react';
-import ProductCard from '../components/shop/ProductCard';
-import ProductUpload from '../components/shop/ProductUpload';
-import { Product } from '../types';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+
+interface Product {
+  _id: string;
+  title: string;
+  description: string;
+  price: number;
+  image: string;
+  category: string;
+}
 
 export default function ShopPage() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState('All');
-  const [refresh, setRefresh] = useState(false);
-
-  const categories = ['All', 'Paintings', 'Merchandise', 'Clothing'];
-
-  // Fetch products from backend
-  const fetchProducts = async () => {
-    try {
-      console.log("Fetching products..."); // 👀 debug
-      const res = await fetch('http://localhost:5000/api/products');
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
-      const data = await res.json();
-      console.log("Fetched products:", data); // 👀 debug
-      setProducts(data);
-    } catch (error) {
-      console.error('Error fetching products:', error);
-    }
-  };
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+    price: "",
+    image: "",
+    category: "Art",
+  });
 
   useEffect(() => {
     fetchProducts();
-  }, [refresh]);
+  }, []);
 
-  // Filter products by category
-  const filteredProducts =
-    selectedCategory === 'All'
-      ? products
-      : products.filter((product) => product.category === selectedCategory);
+  const fetchProducts = async () => {
+    const res = await axios.get("http://localhost:5000/api/products");
+    setProducts(res.data);
+  };
 
-  // Add to cart handler (dummy for now)
-  const handleAddToCart = (id: string) => {
-    console.log('Added to cart:', id);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await axios.post("http://localhost:5000/api/products", {
+        ...formData,
+        price: parseFloat(formData.price),
+      });
+      setFormData({ name: "", description: "", price: "", image: "", category: "Art" });
+      fetchProducts();
+    } catch (err) {
+      console.error("Error adding product", err);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-red-50">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Upload Product */}
-        <ProductUpload
-          onProductAdded={() => {
-            console.log("Product added, refreshing list..."); // 👀 debug
-            setRefresh((prev) => !prev);
-          }}
+    <div className="p-6 max-w-4xl mx-auto">
+      <h1 className="text-2xl font-bold mb-4">Shop Page</h1>
+
+      {/* Add Product Form */}
+      <form onSubmit={handleSubmit} className="mb-6 p-4 border rounded-lg space-y-3">
+        <input
+          type="text"
+          placeholder="Title"
+          value={formData.name}
+          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          className="w-full border p-2 rounded"
+          required
+        />
+        <textarea
+          placeholder="Description"
+          value={formData.description}
+          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          className="w-full border p-2 rounded"
+        />
+        <input
+          type="number"
+          placeholder="Price"
+          value={formData.price}
+          onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+          className="w-full border p-2 rounded"
+          required
+        />
+        <input
+          type="text"
+          placeholder="Image URL"
+          value={formData.image}
+          onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+          className="w-full border p-2 rounded"
         />
 
-        {/* Filters */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 mt-6">
-          <div className="flex flex-wrap gap-4">
-            {categories.map((category) => (
-              <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
-                className={`px-4 py-2 rounded-lg transition-colors ${
-                  selectedCategory === category
-                    ? 'bg-red-800 text-white'
-                    : 'border border-amber-200 hover:bg-amber-50'
-                }`}
-              >
-                {category}
-              </button>
-            ))}
-          </div>
-        </div>
+        {/* Category Dropdown */}
+        <select
+          value={formData.category}
+          onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+          className="w-full border p-2 rounded"
+        >
+          <option value="Art">Art</option>
+          <option value="Print">Print</option>
+          <option value="Merchandise">Merchandise</option>
+          <option value="Other">Other</option>
+        </select>
 
-        {/* Products Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-          {filteredProducts.length > 0 ? (
-            filteredProducts.map((product) => (
-              <ProductCard
-                key={product.id || product.id}
-                product={product}
-                onAddToCart={handleAddToCart}
-              />
-            ))
-          ) : (
-            <p className="col-span-full text-center text-gray-500">
-              No products found.
-            </p>
-          )}
-        </div>
+        <button type="submit" className="bg-red-800 text-white px-4 py-2 rounded">
+          Add Product
+        </button>
+      </form>
+
+      {/* Product List */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {products.map((product) => (
+          <div key={product._id} className="border rounded-lg p-4 shadow">
+            {product.image && (
+      <img
+        src={product.image}
+        alt={product.title}
+        className="w-full h-40 object-cover rounded mb-2"
+      />
+    )}
+            <h2 className="text-lg font-semibold">{product.title}</h2>
+            <p className="text-sm text-gray-600">{product.description}</p>
+            <p className="font-bold mt-2">₹{product.price}</p>
+            <span className="text-xs px-2 py-1 bg-gray-200 rounded">{product.category}</span>
+          </div>
+        ))}
       </div>
     </div>
   );

@@ -1,16 +1,22 @@
 const express = require("express");
+const Product = require("../models/productModel");
 const router = express.Router();
-const Product = require("../models/product");
 
-// Add a product
-router.post("/add", async (req, res) => {
+// Add product
+router.post("/", async (req, res) => {
   try {
-    const product = new Product(req.body);
-    const savedProduct = await product.save();
-    res.status(201).json(savedProduct);
+    const { title, description, price, image, category } = req.body;
+
+    if (!category) {
+      return res.status(400).json({ message: "Category is required" });
+    }
+
+    const product = new Product({ title, description, price, image, category });
+    await product.save();
+    res.status(201).json(product);
   } catch (err) {
     console.error("Error saving product:", err);
-    res.status(500).json({ error: "Failed to save product" });
+    res.status(500).json({ message: "Error saving product" });
   }
 });
 
@@ -20,10 +26,8 @@ router.get("/", async (req, res) => {
     const products = await Product.find();
     res.json(products);
   } catch (err) {
-    res.status(500).json({ error: "Failed to fetch products" });
+    res.status(500).json({ message: "Error fetching products" });
   }
 });
 
 module.exports = router;
-
-
