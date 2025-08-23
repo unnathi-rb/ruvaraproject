@@ -1,196 +1,133 @@
+// src/components/CustomizeCanvas.tsx
 import React, { useState } from 'react';
-import { Save, RotateCcw } from 'lucide-react';
-import { ArtItem } from '../../types';
 import Draggable from 'react-draggable';
+import { ArtItem, Product } from '../../types';
 
 interface CustomizeCanvasProps {
-  selectedArtStyles: string[];
-  selectedProduct: string;
+  selectedProduct: Product | null;
   savedItems: ArtItem[];
-  onSaveCustomization: (item: any) => void;
-}
-
-interface CanvasText {
-  id: string;
-  text: string;
-  x: number;
-  y: number;
+  onSaveCustomization: (data: any) => void;
 }
 
 export default function CustomizeCanvas({
-  selectedArtStyles,
   selectedProduct,
   savedItems,
   onSaveCustomization,
 }: CustomizeCanvasProps) {
-  const [customizationName, setCustomizationName] = useState('');
-  const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [addedMotifs, setAddedMotifs] = useState<ArtItem[]>([]);
-  const [canvasTexts, setCanvasTexts] = useState<CanvasText[]>([]);
-  const [newText, setNewText] = useState('');
+  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+  const [texts, setTexts] = useState<string[]>([]);
 
-  const handleAddMotif = (img: ArtItem) => {
-    if (!addedMotifs.find(m => m.id === img.id)) {
-      setAddedMotifs([...addedMotifs, img]);
+  // ✅ Add saved motif to canvas
+  const handleAddMotif = (item: ArtItem) => {
+    setAddedMotifs([...addedMotifs, item]);
+  };
+
+  // ✅ Upload custom image
+  const handleUploadImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const fileArray = Array.from(e.target.files).map((file) =>
+        URL.createObjectURL(file)
+      );
+      setUploadedImages((prev) => [...prev, ...fileArray]);
     }
   };
 
+  // ✅ Add text
   const handleAddText = () => {
-    if (!newText.trim()) return;
-    setCanvasTexts([
-      ...canvasTexts,
-      { id: Date.now().toString(), text: newText, x: 0, y: 0 },
-    ]);
-    setNewText('');
+    const text = prompt('Enter text:');
+    if (text) setTexts([...texts, text]);
   };
 
+  // ✅ Save
   const handleSave = () => {
-    if (!customizationName.trim()) return;
-
-    const customizedItem = {
-      id: Date.now().toString(),
-      name: customizationName,
-      artStyles: selectedArtStyles,
-      productType: selectedProduct,
+    const data = {
+      product: selectedProduct,
       motifs: addedMotifs,
-      texts: canvasTexts,
-      createdAt: new Date(),
+      uploads: uploadedImages,
+      texts,
     };
-
-    onSaveCustomization(customizedItem);
-    setCustomizationName('');
-    setShowSaveDialog(false);
+    onSaveCustomization(data);
   };
 
-  // Product canvas style
-  const productStyle = {
-    width: selectedProduct === 'Mug' ? 192 : 256, // 48px vs 64px in Tailwind, adjust as needed
-    height: selectedProduct === 'Mug' ? 192 : 320,
-    backgroundColor: 'white',
-    border:
-      selectedProduct === 'Mug'
-        ? '4px solid #ccc'
-        : '2px solid #ccc',
-    borderRadius: selectedProduct === 'Mug' ? '50%' : '12px',
-    position: 'relative' as 'relative',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
+  // ✅ Decide product base image
+  const renderProductBase = () => {
+    if (!selectedProduct) return null;
+
+    switch (selectedProduct.category.toLowerCase()) {
+      case 'tshirt':
+        return <img src="white-blank-t-shirt-front-and-back-template-mockup-design-isolated-vector.jpg" alt="tshirt" className="w-64 h-64 object-contain mx-auto" />;
+      case 'mug':
+        return <img src="539-5392348_white-mug-transparent-background-clipart-png-download-blank.png" alt="mug" className="w-64 h-64 object-contain mx-auto" />;
+      case 'totebag':
+        return <img src="png-clipart-tote-bag-graphy-advertising-handbag-bag-white-photography.png" alt="totebag" className="w-64 h-64 object-contain mx-auto" />;
+      default:
+        return <div className="w-64 h-64 bg-gray-200 mx-auto flex items-center justify-center">No Preview</div>;
+    }
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg p-6">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold text-gray-900">Design Canvas</h2>
-        <div className="flex gap-2">
-          <button className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors">
-            <RotateCcw className="h-5 w-5 text-gray-600" />
-          </button>
-          <button
-            onClick={() => setShowSaveDialog(true)}
-            className="px-4 py-2 bg-red-800 text-white rounded-lg hover:bg-red-900 transition-colors flex items-center gap-2"
-          >
-            <Save className="h-4 w-4" />
-            Save Design
-          </button>
-        </div>
-      </div>
+    <div className="p-4">
+      {/* Canvas Area */}
+      <div className="relative border rounded-lg shadow-md w-80 h-80 bg-white mx-auto">
+        {/* Base product */}
+        {renderProductBase()}
 
-      {/* Canvas */}
-      <div className="relative bg-amber-50 rounded-xl min-h-96 flex items-center justify-center border-2 border-dashed border-amber-200">
-        {selectedProduct ? (
-          <div style={productStyle}>
-            {/* Draggable motifs */}
-            {addedMotifs.map(m => (
-              <Draggable key={m.id}>
-                <img
-                  src={m.imageUrl}
-                  alt={m.title}
-                  className="w-16 h-16 rounded-lg cursor-move"
-                />
-              </Draggable>
-            ))}
-
-            {/* Draggable texts */}
-            {canvasTexts.map(t => (
-              <Draggable key={t.id}>
-                <span className="absolute text-gray-800 font-medium cursor-move">
-                  {t.text}
-                </span>
-              </Draggable>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center text-gray-500">
-            <p className="text-lg font-medium mb-2">Select a product to start</p>
-          </div>
-        )}
-      </div>
-
-      {/* Tools */}
-      <div className="mt-6 flex flex-col md:flex-row gap-4">
-        {/* Add Text */}
-        <div className="flex gap-2">
-          <input
-            type="text"
-            placeholder="Add text"
-            value={newText}
-            onChange={e => setNewText(e.target.value)}
-            className="px-3 py-2 border rounded-lg w-full"
-          />
-          <button
-            onClick={handleAddText}
-            className="px-3 py-2 bg-red-800 text-white rounded-lg hover:bg-red-900"
-          >
-            Add
-          </button>
-        </div>
-
-        {/* Motifs selector */}
-        <div className="flex gap-2 overflow-x-auto py-2">
-          {savedItems.map(img => (
+        {/* Added motifs */}
+        {addedMotifs.map((item, idx) => (
+          <Draggable key={`motif-${idx}`}>
             <img
-              key={img.id}
-              src={img.imageUrl}
-              alt={img.title}
-              className="w-20 h-20 object-cover rounded-lg cursor-pointer border-2 hover:border-red-500"
-              onClick={() => handleAddMotif(img)}
+              src={item.imageUrl}
+              alt={item.title}
+              className="absolute w-20 h-20 object-contain cursor-move"
             />
-          ))}
-        </div>
+          </Draggable>
+        ))}
+
+        {/* Uploaded Images */}
+        {uploadedImages.map((url, idx) => (
+          <Draggable key={`upload-${idx}`}>
+            <img
+              src={url}
+              alt="upload"
+              className="absolute w-20 h-20 object-contain cursor-move"
+            />
+          </Draggable>
+        ))}
+
+        {/* Texts */}
+        {texts.map((text, idx) => (
+          <Draggable key={`text-${idx}`}>
+            <div className="absolute px-2 py-1 bg-white border rounded shadow text-sm cursor-move">
+              {text}
+            </div>
+          </Draggable>
+        ))}
       </div>
 
-      {/* Save Dialog */}
-      {showSaveDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Save Your Design</h3>
-            <input
-              type="text"
-              value={customizationName}
-              onChange={e => setCustomizationName(e.target.value)}
-              placeholder="Enter design name"
-              className="w-full px-3 py-2 border border-amber-200 rounded-lg focus:ring-2 focus:ring-red-300 focus:border-transparent mb-4"
-            />
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowSaveDialog(false)}
-                className="flex-1 px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={!customizationName.trim()}
-                className="flex-1 px-4 py-2 bg-red-800 text-white rounded-lg hover:bg-red-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Controls */}
+      <div className="flex gap-3 mt-4 justify-center">
+        <input type="file" accept="image/*" multiple onChange={handleUploadImage} />
+        <button onClick={handleAddText} className="px-3 py-1 bg-blue-500 text-white rounded">
+          Add Text
+        </button>
+        <button onClick={handleSave} className="px-3 py-1 bg-green-500 text-white rounded">
+          Save
+        </button>
+      </div>
+
+      {/* Saved motifs scroll bar */}
+      <div className="flex overflow-x-auto mt-4 space-x-2 p-2 border rounded">
+        {savedItems.map((item) => (
+          <img
+            key={item.id}
+            src={item.imageUrl}
+            alt={item.title}
+            onClick={() => handleAddMotif(item)}
+            className="w-20 h-20 object-cover cursor-pointer border rounded hover:scale-105 transition"
+          />
+        ))}
+      </div>
     </div>
   );
 }
