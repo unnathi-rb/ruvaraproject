@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Palette, Eye, EyeOff } from 'lucide-react';
 
 interface AuthPageProps {
-  onLogin: (user: { name: string; email: string }) => void;
+  onLogin: (user: { name: string; email: string; userId: string }) => void;
 }
 
 export default function AuthPage({ onLogin }: AuthPageProps) {
@@ -13,13 +13,49 @@ export default function AuthPage({ onLogin }: AuthPageProps) {
     email: '',
     password: ''
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onLogin({
-      name: formData.name || formData.email.split('@')[0],
-      email: formData.email
-    });
+    setLoading(true);
+    setError('');
+
+    const url = isLogin
+      ? 'http://localhost:5000/api/users/login'
+      : 'http://localhost:5000/api/users/signup';
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.message || 'Something went wrong');
+        setLoading(false);
+        return;
+      }
+
+      const user = {
+        name: formData.name || formData.email.split('@')[0],
+        email: formData.email,
+        userId: data.userId
+      };
+
+      // Store user in localStorage for persistence
+      localStorage.setItem('ruvaraUser', JSON.stringify(user));
+
+      onLogin(user);
+    } catch (err) {
+      console.error(err);
+      setError('Server error, try again later');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -40,12 +76,10 @@ export default function AuthPage({ onLogin }: AuthPageProps) {
         <form onSubmit={handleSubmit} className="space-y-6">
           {!isLogin && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Full Name
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
               <input
                 type="text"
-                required={!isLogin}
+                required
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 className="w-full px-4 py-3 border border-amber-200 rounded-lg focus:ring-2 focus:ring-red-300 focus:border-transparent transition-colors"
@@ -55,9 +89,7 @@ export default function AuthPage({ onLogin }: AuthPageProps) {
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Email Address
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
             <input
               type="email"
               required
@@ -69,9 +101,7 @@ export default function AuthPage({ onLogin }: AuthPageProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Password
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
@@ -91,11 +121,14 @@ export default function AuthPage({ onLogin }: AuthPageProps) {
             </div>
           </div>
 
+          {error && <p className="text-red-600 text-sm">{error}</p>}
+
           <button
             type="submit"
-            className="w-full bg-red-800 text-white py-3 rounded-lg hover:bg-red-900 transition-colors font-medium"
+            disabled={loading}
+            className="w-full bg-red-800 text-white py-3 rounded-lg hover:bg-red-900 transition-colors font-medium disabled:opacity-50"
           >
-            {isLogin ? 'Sign In' : 'Create Account'}
+            {loading ? 'Please wait...' : isLogin ? 'Sign In' : 'Create Account'}
           </button>
         </form>
 
