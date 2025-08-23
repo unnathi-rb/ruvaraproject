@@ -10,7 +10,7 @@ export default function HomePage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [socket, setSocket] = useState<Socket | null>(null);
 
-  // Fetch artworks from MongoDB
+  // Fetch artworks from backend
   const fetchArtworks = async () => {
     try {
       const res = await axios.get('http://localhost:5000/api/artworks');
@@ -23,7 +23,7 @@ export default function HomePage() {
   useEffect(() => {
     fetchArtworks();
 
-    // Connect to WebSocket
+    // Initialize WebSocket connection
     const newSocket = io('http://localhost:5000');
     setSocket(newSocket);
 
@@ -32,7 +32,7 @@ export default function HomePage() {
       setArtItems((prev) => [art, ...prev]);
     });
 
-    // Listen for updates (like save/bookmark toggle)
+    // Listen for save/bookmark updates
     newSocket.on('update-artwork', (updatedArt: ArtItem) => {
       setArtItems((prev) =>
         prev.map((item) => (item.id === updatedArt.id ? updatedArt : item))
@@ -45,11 +45,12 @@ export default function HomePage() {
   }, []);
 
   // Toggle save/bookmark
-  const handleSave = async (_id: string) => {
+  const handleSave = async (id: string) => {
     try {
-      const res = await axios.patch(`http://localhost:5000/api/artworks/${_id}/save`);
+      const res = await axios.patch(`http://localhost:5000/api/artworks/${id}/save`);
+      // Optimistic UI update is optional since WebSocket will update
       setArtItems((prev) =>
-        prev.map((item) => (item.id === _id ? res.data : item))
+        prev.map((item) => (item.id === id ? res.data : item))
       );
     } catch (err) {
       console.error('Error toggling save:', err);
@@ -60,7 +61,7 @@ export default function HomePage() {
   const handleAddArtwork = async (newItem: ArtItem) => {
     try {
       await axios.post('http://localhost:5000/api/artworks', newItem);
-      // No need to update state manually, Socket.IO will handle it
+      // No need to update artItems manually — WebSocket will broadcast it
     } catch (err) {
       console.error('Error adding artwork:', err);
     }
@@ -77,7 +78,6 @@ export default function HomePage() {
       <AddImageModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSubmit={handleAddArtwork}
       />
     </div>
   );

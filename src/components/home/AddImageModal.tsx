@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
+import axios from 'axios';
 
 interface AddImageModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: any) => void;
 }
 
-export default function AddImageModal({ isOpen, onClose, onSubmit }: AddImageModalProps) {
+export default function AddImageModal({ isOpen, onClose }: AddImageModalProps) {
   const [formData, setFormData] = useState({
     title: '',
     artForm: 'Madhubani',
@@ -17,38 +17,46 @@ export default function AddImageModal({ isOpen, onClose, onSubmit }: AddImageMod
     imageUrl: '',
   });
 
-  // Extra state for handling "Others"
   const [otherArtForm, setOtherArtForm] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // if user selected "Others", save the typed value instead
     const finalArtForm =
       formData.artForm === 'Others' && otherArtForm.trim()
         ? otherArtForm.trim()
         : formData.artForm;
 
-    onSubmit({
+    const newArtwork = {
       ...formData,
       artForm: finalArtForm,
       tags: formData.tags
         .split(',')
         .map((tag) => tag.trim())
         .filter((tag) => tag),
-    });
+    };
 
-    // reset state
-    setFormData({
-      title: '',
-      artForm: 'Madhubani',
-      description: '',
-      artist: '',
-      tags: '',
-      imageUrl: '',
-    });
-    setOtherArtForm('');
-    onClose();
+    try {
+      setLoading(true);
+      await axios.post('http://localhost:5000/api/artworks', newArtwork);
+      setLoading(false);
+
+      // Reset form
+      setFormData({
+        title: '',
+        artForm: 'Madhubani',
+        description: '',
+        artist: '',
+        tags: '',
+        imageUrl: '',
+      });
+      setOtherArtForm('');
+      onClose();
+    } catch (err) {
+      console.error('Error adding artwork:', err);
+      setLoading(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -69,9 +77,7 @@ export default function AddImageModal({ isOpen, onClose, onSubmit }: AddImageMod
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {/* Title */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Title
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
             <input
               type="text"
               required
@@ -82,11 +88,9 @@ export default function AddImageModal({ isOpen, onClose, onSubmit }: AddImageMod
             />
           </div>
 
-          {/* Art Form with "Others" */}
+          {/* Art Form */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Art Form
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Art Form</label>
             <select
               value={formData.artForm}
               onChange={(e) => setFormData({ ...formData, artForm: e.target.value })}
@@ -104,7 +108,6 @@ export default function AddImageModal({ isOpen, onClose, onSubmit }: AddImageMod
               <option value="Others">Others</option>
             </select>
 
-            {/* Show input when "Others" is selected */}
             {formData.artForm === 'Others' && (
               <input
                 type="text"
@@ -118,9 +121,7 @@ export default function AddImageModal({ isOpen, onClose, onSubmit }: AddImageMod
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Description
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
             <textarea
               required
               value={formData.description}
@@ -133,9 +134,7 @@ export default function AddImageModal({ isOpen, onClose, onSubmit }: AddImageMod
 
           {/* Artist */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Artist (Optional)
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Artist (Optional)</label>
             <input
               type="text"
               value={formData.artist}
@@ -147,9 +146,7 @@ export default function AddImageModal({ isOpen, onClose, onSubmit }: AddImageMod
 
           {/* Image URL */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Image URL
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Image URL</label>
             <input
               type="url"
               required
@@ -162,9 +159,7 @@ export default function AddImageModal({ isOpen, onClose, onSubmit }: AddImageMod
 
           {/* Tags */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tags (comma-separated)
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Tags (comma-separated)</label>
             <input
               type="text"
               value={formData.tags}
@@ -185,9 +180,10 @@ export default function AddImageModal({ isOpen, onClose, onSubmit }: AddImageMod
             </button>
             <button
               type="submit"
+              disabled={loading}
               className="flex-1 px-4 py-2 bg-red-800 text-white rounded-lg hover:bg-red-900 transition-colors"
             >
-              Add Artwork
+              {loading ? 'Adding...' : 'Add Artwork'}
             </button>
           </div>
         </form>
